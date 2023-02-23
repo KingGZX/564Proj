@@ -182,12 +182,10 @@ class Data_S3DIS:
         """
         :param file_path:
         :return:
-
-        pc_xyzrgb: dimension 9, coordinates x y z, color r g b, normalized coordinates p q w
         """
         pc_xyzrgb, sem_labels, ins_labels = Data_S3DIS.load_raw_data_file_s3dis_block(file_path)
 
-        # center of one block
+        # find the rectangular which includes the block
         min_x = np.min(pc_xyzrgb[:, 0])
         max_x = np.max(pc_xyzrgb[:, 0])
         min_y = np.min(pc_xyzrgb[:, 1])
