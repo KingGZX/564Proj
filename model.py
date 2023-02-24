@@ -76,7 +76,9 @@ class Semantic_Net(nn.Module):
         f5 = self.dropout(self.relu5(self.conv3(f4)))
         f6 = self.conv4(f5)  # [Batch, semantic_num, points, 1]
 
-        predict_sem_labels = F.softmax(torch.permute(torch.squeeze(f6), [0, 2, 1]), dim=2)  # .. CHECK
+        # no need to use softmax here since CrossEntropy Loss can automatically do this for us
+        # predict_sem_labels = F.softmax(torch.permute(torch.squeeze(f6), [0, 2, 1]), dim=2)  # .. CHECK
+        predict_sem_labels = torch.permute(torch.squeeze(f6), [0, 2, 1])
         return predict_sem_labels
 
 
