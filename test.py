@@ -37,3 +37,6 @@ print(masks.shape)
 from lossfunc import *
 C_ed = box_distance_cost(torch.tensor(bb_labels), box)
 print(C_ed.shape)
+
+C_sIoU = box_s_iou_cost(torch.tensor(X), torch.tensor(bb_labels), box)
+print(C_sIoU.shape)
