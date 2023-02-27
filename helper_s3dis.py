@@ -12,9 +12,9 @@ class Data_Configs:
                  'table', 'chair', 'sofa', 'bookcase', 'board', 'clutter']
     sem_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-    points_cc = 9
-    sem_num = len(sem_names)
-    ins_max_num = 24
+    points_cc = 9                   # point feature dimension which is same as shape[1] of attribute ['point']
+    sem_num = len(sem_names)        # semantic num
+    ins_max_num = 24                # maximum instance num we assume in a batch of file
     train_pts_num = 4096
     test_pts_num = 4096
 
