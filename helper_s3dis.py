@@ -299,11 +299,11 @@ class Data_S3DIS:
             """
             setting gt_bbvert_padded, we can get the bounding box of instance
             """
-            gt_bbvert_padded[count, 0, 0] = x_min = np.min(pc_xyz_tp[:, 0])
-            gt_bbvert_padded[count, 0, 1] = y_min = np.min(pc_xyz_tp[:, 1])
-            gt_bbvert_padded[count, 0, 2] = z_min = np.min(pc_xyz_tp[:, 2])
-            gt_bbvert_padded[count, 1, 0] = x_max = np.max(pc_xyz_tp[:, 0])
-            gt_bbvert_padded[count, 1, 1] = y_max = np.max(pc_xyz_tp[:, 1])
-            gt_bbvert_padded[count, 1, 2] = z_max = np.max(pc_xyz_tp[:, 2])
+            gt_bbvert_padded[count, 0, 0] = np.min(pc_xyz_tp[:, 0])
+            gt_bbvert_padded[count, 0, 1] = np.min(pc_xyz_tp[:, 1])
+            gt_bbvert_padded[count, 0, 2] = np.min(pc_xyz_tp[:, 2])
+            gt_bbvert_padded[count, 1, 0] = np.max(pc_xyz_tp[:, 0])
+            gt_bbvert_padded[count, 1, 1] = np.max(pc_xyz_tp[:, 1])
+            gt_bbvert_padded[count, 1, 2] = np.max(pc_xyz_tp[:, 2])
 
         return gt_bbvert_padded, gt_pmask
