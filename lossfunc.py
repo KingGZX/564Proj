@@ -65,8 +65,6 @@ class Ops:
 
         return ordering, loss_total
 
-    # @title 一键复制assciation ver.
-
     # @title C_ed
     @staticmethod
     def box_distance_cost(box_labels, predict_boxes):
