@@ -11,8 +11,16 @@ test the procedures step by step
 a = 'Area_1'
 con = glob.glob("./data/Data_S3DIS/" + a + '*.h5')
 
-data = Data_S3DIS("./data/Data_S3DIS/", ['Area_1'], ['Area_5'])
+data = Data_S3DIS("./data/Data_S3DIS/", ['Area_1', 'Area_2', 'Area_3', 'Area_4', 'Area_6'], ['Area_5'])
 
+from train import train
+net = Backbone_BoNet(9)
+net2 = Semantic_Net()
+net3 = BBox_Net()
+net4 = Pmask_Net()
+train([net, net2, net3, net4], data)
+
+"""
 X, sem_labels, ins_labels, psem_labels, bb_labels, pmask_labels = data.load_train_next_batch()
 print(X.shape)
 
@@ -40,3 +48,4 @@ print(C_ed.shape)
 
 C_sIoU = box_s_iou_cost(torch.tensor(X), torch.tensor(bb_labels), box)
 print(C_sIoU.shape)
+"""
