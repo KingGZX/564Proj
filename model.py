@@ -34,7 +34,7 @@ class Backbone_BoNet(nn.Module):
         """
         f5 = torch.permute(f5, [0, 2, 3, 1])  # in the shape [B, N, 1, 1024]
         global_features = torch.max(f5, dim=1)[0].squeeze()  # torch.max return tuple (values, indices)
-        points_features = torch.squeeze(f5)
+        points_features = torch.squeeze(f5, dim=-2)
         # encoded features returned
         return global_features, points_features
 
@@ -78,7 +78,7 @@ class Semantic_Net(nn.Module):
 
         # no need to use softmax here since CrossEntropy Loss can automatically do this for us
         # predict_sem_labels = F.softmax(torch.permute(torch.squeeze(f6), [0, 2, 1]), dim=2)  # .. CHECK
-        predict_sem_labels = torch.permute(torch.squeeze(f6), [0, 2, 1])
+        predict_sem_labels = torch.permute(torch.squeeze(f6, dim=-1), [0, 2, 1])
         return predict_sem_labels
 
 
@@ -116,7 +116,6 @@ class BBox_Net(nn.Module):
         f3 = self.relu3(self.fc3(f2))
         boxes = self.fc4(f3)
         boxes = boxes.view(boxes.shape[0], -1, 2, 3)
-        print(boxes.shape)
         # output shape is (B, H, 2, 3), but we don't know whether this box is represented correctly
 
         min_coord = torch.min(boxes, dim=2)[0][:, :, None, :]  # shape is [B, N, 1, 3]
