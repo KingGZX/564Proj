@@ -16,12 +16,13 @@ def draw_pc():
         if pc_xyzrgb.shape[1] == 3:
             open3d.draw_geometries([pc])
             return 0
-        if np.max(pc_xyzrgb[:, 3:6]) > 20:  ## 0-255
+        if np.max(pc_xyzrgb[:, 3:6]) > 20:  # 0-255
             pc.colors = open3d.Vector3dVector((pc_xyzrgb[:, 3:6] / 255.).reshape(-1, 3))
         else:
             pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6].reshape(-1, 3))
         pc_list.append(pc)
     open3d.draw_geometries(pc_list)
     return 0
+
 
 draw_pc()
