@@ -114,6 +114,7 @@ class Plot:
         return Y_semins
 
 
+"""
 fin = h5py.File("Area_1_office_1.h5")
 # Plot.draw_pc(fin)
 # coords = fin['coords'][:]
@@ -131,3 +132,4 @@ print(sem_labels.shape)
 # data_valid = True
 # ins_idx = np.unique(ins_labels)
 Plot.draw_pc_semins(points, sem_labels, fix_color_num=13)
+"""
