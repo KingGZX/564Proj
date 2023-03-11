@@ -4,6 +4,8 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from helper_s3dis import Data_Configs
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dtype = torch.float32
 
 class Ops:
     @staticmethod
@@ -17,6 +19,8 @@ class Ops:
         """
         batch = pred_pre.shape[0]
         [_, ins_max_num, d1, d2] = pred_pre.shape
+        if device == torch.device('cuda'):
+            pred_pre = pred_pre.to(torch.device('cpu'), dtype=dtype)
         batch_range = torch.arange(0, batch).type(torch.IntTensor)
         batch_range_flat = batch_range.view(-1, 1)
         batch_range_flat_repeat = batch_range_flat.repeat(1, int(ins_max_num))
@@ -27,6 +31,7 @@ class Ops:
         pred_pre = pred_pre.view(-1, int(d1), int(d2))
         pred_new = pred_pre.index_select(0, indice_2d_flat_repeat)
         pred_new = pred_new.view(batch, -1, int(d1), int(d2))
+        pred_new = pred_new.to(device, dtype=dtype)
         return pred_new
 
     @staticmethod
@@ -59,8 +64,13 @@ class Ops:
                 ordering[idx] = np.reshape(col_ind, [1, -1])
             return ordering, (loss_total / float(batch_size * num_instances)).astype(np.float32)
 
-        lm = loss_matrix.detach().numpy()
-        bgt = bb_gt.detach().numpy()
+        if device == torch.device('cuda'):
+            lm = loss_matrix.cpu().detach().numpy()
+            bgt = bb_gt.cpu().detach().numpy()
+        else:
+            lm = loss_matrix.detach().numpy()
+            bgt = bb_gt.detach().numpy()
+
         ordering, loss_total = assign_mappings_valid_only(lm, bgt)
 
         return ordering, loss_total
@@ -132,6 +142,8 @@ class Ops:
         gt_hard_prob = torch.eq(torch.mean(gt_hard_prob, dim=-1), 1.).type(
             torch.FloatTensor)  # shape [Batch, b_num, p_num]
 
+        gt_hard_prob = gt_hard_prob.to(device, dtype=dtype)
+
         """ 
         sort-binary vector qi (R^N) which indicates whether a point is inside i-th pred box 
         纯按公式
@@ -151,6 +163,7 @@ class Ops:
         return gt_hard_prob, pred_prob
 
     # @title C_sIoU + C_ce
+
     @staticmethod
     def box_sIOU_CEntrophy_cost(gt_hard_prob, pred_prob):
         """
@@ -263,6 +276,7 @@ class Ops:
         box_labels_pos = box_labels.view(-1, Data_Configs.ins_max_num,
                                          6)  # [Batch, 24, 6], dimensiondimension 1 is one box
         box_labels_pos = torch.ge(torch.sum(box_labels_pos, dim=-1), 0.).type(torch.FloatTensor)
+        box_labels_pos = box_labels_pos.to(device, dtype=dtype)
         # [Batch, 24], dimension 0 filled with 0false and 1true which means whether the box in gt box is valid
         T = torch.sum(box_labels_pos)  # int  how many the ture and valid ground Truth boxes are
 
@@ -324,6 +338,7 @@ class Ops:
         box_labels_pos = box_labels.view(-1, Data_Configs.ins_max_num,
                                          6)  # [Batch, 24, 6], dimensiondimension 1 is one box
         box_labels_pos = torch.ge(torch.sum(box_labels_pos, dim=-1), 0.).type(torch.FloatTensor)
+        box_labels_pos = box_labels_pos.to(device, dtype=dtype)
 
         # bbox score loss
         bbox_loss_score = torch.mean(-box_labels_pos * torch.log(y_bbscore_pred + 1e-8)
