@@ -12,6 +12,10 @@ dtype = torch.float32
 def train(model: list, data: Data_S3DIS):
     # setting hyperparameters
     backbone, seg_net, box_net, mask_net = model
+    backbone = nn.DataParallel(backbone)
+    seg_net = nn.DataParallel(seg_net)
+    box_net = nn.DataParallel(box_net)
+    mask_net = nn.DataParallel(mask_net)
     backbone.to(device), seg_net.to(device), box_net.to(device), mask_net.to(device)
     start_epoch = 0
     optimizer = optim.Adam([{"params": backbone.parameters()}, {"params": seg_net.parameters()},
