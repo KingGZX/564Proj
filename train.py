@@ -5,14 +5,19 @@ from helper_s3dis import Data_S3DIS
 import os
 from lossfunc import Ops
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+dtype = torch.float32
+
 
 def train(model: list, data: Data_S3DIS):
     # setting hyperparameters
     backbone, seg_net, box_net, mask_net = model
+    backbone.to(device), seg_net.to(device), box_net.to(device), mask_net.to(device)
     start_epoch = 0
     optimizer = optim.Adam([{"params": backbone.parameters()}, {"params": seg_net.parameters()},
                             {"params": box_net.parameters()}, {"params": mask_net.parameters()}],
                            lr=5e-4)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
     checkpoint_path = "./checkpoint/***.pkl"
 
@@ -36,7 +41,15 @@ def train(model: list, data: Data_S3DIS):
             psem_labels = torch.tensor(psem_labels)
             bb_labels = torch.tensor(bb_labels)
             pmask_labels = torch.tensor(pmask_labels)
-            global_features, points_features = backbone(torch.tensor(X[:, :, :9]))
+            in_X = torch.tensor(X[:, :, :9]).clone().detach()
+            in_X = in_X.to(device, dtype=dtype)
+            X = X.to(device, dtype=dtype)
+            sem_labels = sem_labels.to(device)
+            ins_labels = ins_labels.to(device)
+            psem_labels = psem_labels.to(device)
+            bb_labels = bb_labels.to(device)
+            pmask_labels = pmask_labels.to(device)
+            global_features, points_features = backbone(in_X)
             predict_sem_labels = seg_net(global_features, points_features)
             predict_boxes, predict_boxes_scores = box_net(global_features)
             predict_point_mask = mask_net(global_features, points_features, predict_boxes, predict_boxes_scores)
@@ -50,7 +63,13 @@ def train(model: list, data: Data_S3DIS):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            print(loss.item())
+            torch.save(backbone, "./backbone.pth")
+            torch.save(seg_net, "./seg_net.pth")
+            torch.save(pmask_labels, './pmask_net.pth')
+            torch.save(box_net, './box_net.pth')
+            if i % 100 == 0:
+                print('Epoch %d: loss is %.4f' % (epoch, loss.item()))
+        scheduler.step()
 
 
 def eval():
