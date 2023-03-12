@@ -170,7 +170,7 @@ class Pmask_Net(nn.Module):
         # print(features.shape)
         f1 = self.relu3(self.conv2(features))
         f2 = self.relu4(self.conv3(f1))         # shape [Batch. 128, p_num, 1]
-        new_features = torch.squeeze(f2)        # shape [Batch, 128, p_num]
+        new_features = torch.squeeze(f2, dim=-1)        # shape [Batch, 128, p_num]
 
         boxes = predict_boxes.view(-1, self.mbox, 6)       # reshape [2, 3] rectangular notation to long vector
         # print(boxes.shape)                               # shape [Batch, boxes_num, 6]
