@@ -59,7 +59,7 @@ C_sIoU = box_s_iou_cost(torch.tensor(X), torch.tensor(bb_labels), box)
 print(C_sIoU.shape)
 """
 
-fin = h5py.File("./Area_6_office_33.h5", 'r')
+fin = h5py.File("./Area_1_office_1.h5", 'r')
 
 coords = fin['coords'][:].reshape(-1, 3)
 points = fin['points'][:].reshape(-1, 9)
@@ -79,14 +79,14 @@ pc_xyzrgb = np.concatenate([pc_xyzrgb, ori_xyz], axis=-1)
 # print(pc_xyzrgb.shape)
 
 
-backbone = torch.load("./backbone.pth")
+backbone = torch.load("./backbone.pth", map_location=torch.device('cpu'))
 backbone.eval()
-seg_net = torch.load("./seg_net.pth")
+seg_net = torch.load("./seg_net.pth", map_location=torch.device('cpu'))
 seg_net.eval()
 in_X = torch.tensor(pc_xyzrgb[None, :, :9]).clone().detach()
 f1, f2 = backbone(in_X)
 f1 = f1[None, :]
-f2 = f2[None, :, :]
+# f2 = f2[None, :, :]
 predict_sem_labels = seg_net(f1, f2)
 # print(predict_sem_labels.shape)
 predict_sem_labels = torch.squeeze(predict_sem_labels)
