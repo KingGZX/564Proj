@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch
 from helper_s3dis import Data_S3DIS
 import os
-from lossfunc import Ops
+from utils import Ops
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
@@ -79,6 +79,3 @@ def train(model: list, data: Data_S3DIS):
         scheduler.step()
 
 
-def eval():
-
-    pass

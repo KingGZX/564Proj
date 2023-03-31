@@ -5,7 +5,7 @@ import glob
 from model import *
 import torch
 import h5py
-from lossfunc import *
+from utils import *
 from dataplot import Plot
 import copy
 

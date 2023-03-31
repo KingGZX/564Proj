@@ -29,9 +29,13 @@ class Data_S3DIS:
 
         self.ins_max_num = Data_Configs.ins_max_num  # used in bounding box regression
         self.train_batch_size = train_batch_size
+        self.test_batch_size = train_batch_size
         self.total_train_batch_num = len(self.train_files) // self.train_batch_size
+        self.total_test_batch_num = len(self.test_files) // self.test_batch_size
+
 
         self.train_next_bat_index = 0
+        self.test_next_bat_index = 0
 
     def load_full_file_list(self, areas):
         """
@@ -150,7 +154,8 @@ class Data_S3DIS:
         self.train_next_bat_index = 0
         print('train files shuffled!')
 
-    def load_test_next_batch_sq(self, bat_files):
+    def load_test_next_batch_sq(self):
+        bat_files = self.test_files[self.test_next_bat_index * self.test_batch_size:(self.test_next_bat_index + 1) * self.test_batch_size]
         bat_pc = []
         bat_sem_labels = []
         bat_ins_labels = []
@@ -174,6 +179,7 @@ class Data_S3DIS:
         bat_bbvert_padded_labels = np.asarray(bat_bbvert_padded_labels, dtype=np.float32)
         bat_pmask_padded_labels = np.asarray(bat_pmask_padded_labels, dtype=np.float32)
 
+        self.test_next_bat_index += 1
         return bat_pc, bat_sem_labels, bat_ins_labels, bat_psem_onehot_labels, bat_bbvert_padded_labels, \
             bat_pmask_padded_labels, bat_files
 
