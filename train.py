@@ -1,9 +1,9 @@
 import torch.optim as optim
-import torch.nn as nn
 import torch
 from helper_s3dis import Data_S3DIS
 import os
 from utils import Ops
+from eva import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
@@ -27,6 +27,7 @@ def train(model: list, data: Data_S3DIS):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
     checkpoint_path = "./checkpoint/***.pkl"
+
 
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
@@ -74,8 +75,25 @@ def train(model: list, data: Data_S3DIS):
             torch.save(seg_net, "./seg_net.pth")
             torch.save(pmask_labels, './pmask_net.pth')
             torch.save(box_net, './box_net.pth')
-            if i % 100 == 0:
-                print('Epoch %d: loss is %.4f' % (epoch, loss.item()))
+            if i % 500 == 0:
+                print('Epoch{%d}/{%d},batch{%d}/{%d}:loss is %.4f' % (epoch, start_epoch + 50, i, batch, loss.item()))
+
+        accu = eva_accu(backbone, seg_net, data, device)
+        data.test_next_bat_index = 0 #
+        iou = eva_IoU(backbone, box_net, data, device)
+        data.test_next_bat_index = 0
+
+        #!!!!!!! !!!
+        accu_file = open("J:/COMProfile/Downloads/pk/0407_accu.txt", "a")  # append mode
+        accu_file.write(','.join(str(i) for i in accu))
+        accu_file.write("\n")
+        accu_file.close()
+        iou_file = open("J:/COMProfile/Downloads/pk/0407_iou.txt", "a")  # append mode
+        iou_file.write(str(iou))
+        iou_file.write("\n")
+        iou_file.close()
+
+
         scheduler.step()
 
 

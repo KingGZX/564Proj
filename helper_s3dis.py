@@ -180,8 +180,7 @@ class Data_S3DIS:
         bat_pmask_padded_labels = np.asarray(bat_pmask_padded_labels, dtype=np.float32)
 
         self.test_next_bat_index += 1
-        return bat_pc, bat_sem_labels, bat_ins_labels, bat_psem_onehot_labels, bat_bbvert_padded_labels, \
-            bat_pmask_padded_labels, bat_files
+        return bat_pc, bat_sem_labels, bat_ins_labels, bat_psem_onehot_labels, bat_bbvert_padded_labels, bat_pmask_padded_labels
 
     @staticmethod
     def load_fixed_points(file_path):
