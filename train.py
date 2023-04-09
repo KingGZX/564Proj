@@ -4,6 +4,7 @@ from helper_s3dis import Data_S3DIS
 import os
 from utils import Ops
 from eva import *
+from Transformer import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
@@ -97,3 +98,25 @@ def train(model: list, data: Data_S3DIS):
         scheduler.step()
 
 
+def train_transformer(model, data):
+    transformer, seg_net = model
+    start_epoch = 0
+    optimizer = optim.Adam([{"params": transformer.parameters()}, {"params": seg_net.parameters()}],
+                           lr=5e-4)
+    for epoch in range(start_epoch, start_epoch + 50):
+        data.shuffle_train_files(epoch)
+        batch = data.total_train_batch_num
+        for i in range(batch):
+            X, sem_labels, ins_labels, psem_labels, bb_labels, pmask_labels = data.load_train_next_batch()
+            idx, points = farthest_point_sampling(X)
+            X = torch.tensor(X)
+            sem_labels = torch.tensor(sem_labels)
+            psem_labels = torch.tensor(psem_labels)
+            global_features, points_features = transformer(X, points, idx)
+            predict_sem_labels = seg_net(global_features, points_features)
+            loss = Ops.semantic_loss(psem_labels, predict_sem_labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if i % 10 == 0:
+                print('Epoch{%d}/{%d},batch{%d}/{%d}:loss is %.4f' % (epoch, start_epoch + 50, i, batch, loss.item()))

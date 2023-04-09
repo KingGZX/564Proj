@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-import pytorch3d
 
 """
 Framework:
@@ -17,11 +16,12 @@ def farthest_point_sampling(points, sample_num=1000):
     """
     :param points:        [Batch, points, features]
     :param sample_num:    down sample num
-    :return:              [Batch, sample_num, features]
+    :return:              index = [Batch, sample_num]     sample_points = [Batch, sample_num, features]
     """
     batch, num, fd = points.shape
+    select_idx = np.zeros((batch, sample_num))
+    select_idx[np.arange(batch)] = np.arange(sample_num)
     if num > sample_num:
-        select_idx = np.zeros((batch, sample_num))
         coords = points[:, :, -3:]  # the last 3 dimensions are original coordinates
         features = points[:, :, :-3]
         select_index = np.random.randint(0, points.shape[1], size=batch)
@@ -44,9 +44,12 @@ def farthest_point_sampling(points, sample_num=1000):
         points = torch.tensor(points)
         index = index[:, :, None]
         index = index.repeat(1, 1, fd)
-        return torch.gather(input=points, dim=1, index=index)
+        return select_idx, torch.gather(input=points, dim=1, index=index)
     else:
-        return torch.tensor(points)
+        """
+        needs to be modified!
+        """
+        return select_idx, torch.tensor(points)
 
 
 def neighbor_select(values, indices, dim=2):
@@ -178,11 +181,18 @@ class Transformer(nn.Module):
         self.attn2 = SA_Layer(128, attn_hidden_dim, pos_hidden_dim)
         self.attn3 = SA_Layer(128, attn_hidden_dim, pos_hidden_dim)
         self.attn4 = SA_Layer(128, attn_hidden_dim, pos_hidden_dim)
-        self.conv_fuse = nn.Sequential(nn.Conv1d(512, 1024, kernel_size=1, bias=False),
+        self.attn_mlp = nn.Sequential(nn.Linear(4 * 128, 128),
+                                      nn.LeakyReLU(),
+                                      )
+        self.conv_fuse = nn.Sequential(nn.Conv1d(128, 512, kernel_size=1, bias=False),
+                                       nn.BatchNorm1d(512),
+                                       nn.LeakyReLU(),
+                                       nn.Conv1d(512, 1024, kernel_size=1, bias=False),
                                        nn.BatchNorm1d(1024),
-                                       nn.LeakyReLU())
+                                       nn.LeakyReLU(),
+                                       )
 
-    def forward(self, x):
+    def forward(self, x, fps_points, fps_index):
         """
         :param x: input data, [batch, fps_sample_num, model_dim]
         :return:  like backbone_net, get global features and point-wise features
@@ -190,30 +200,46 @@ class Transformer(nn.Module):
         # mapping to a high dimension feature space
         pos = x[:, :, -3:]
         x = x[:, :, :-3]
-        x = torch.permute(x, [0, 2, 1])  # [batch, model_dim, fps_sample_num]
-        f1 = self.relu1(self.bn1(self.conv1(x)))  # shape is [batch, 64, fps_sample_num]
-        f2 = self.relu2(self.bn2(self.conv2(f1)))  # shape is [batch, 128, fps_sample_num]
-        f2 = torch.permute(f2, [0, 2, 1])  # shape is [batch, fps_sample_num, 128]
+        x = torch.permute(x, [0, 2, 1])  # [batch, model_dim, num]
+        f1 = self.relu1(self.bn1(self.conv1(x)))  # shape is [batch, 64, num]
+        f2 = self.relu2(self.bn2(self.conv2(f1)))  # shape is [batch, 128, num]
+        f2 = torch.permute(f2, [0, 2, 1])  # shape is [batch, num, 128]
 
         # for self-attention, shape of input and output is the same
-        sa1 = self.attn1(f2, pos)
-        sa2 = self.attn2(f2, pos)
-        sa3 = self.attn3(f2, pos)
-        sa4 = self.attn4(f2, pos)
-        attn = torch.concat((sa1, sa2, sa3, sa4), dim=2)
+        # to save gpu memory, only use fps samples
+        fps_index = torch.tensor(fps_index, dtype=torch.int64)
+        index = fps_index[:, :, None]
+        index = index.repeat(1, 1, f2.shape[-1])
+        fps_f2 = torch.gather(input=f2, dim=1, index=index)
+        fps_pos = fps_points[:, :, -3:]
+        sa1 = self.attn1(fps_f2, fps_pos)  # [batch, sample_num, 128]
+        sa2 = self.attn2(fps_f2, fps_pos)
+        sa3 = self.attn3(fps_f2, fps_pos)
+        sa4 = self.attn4(fps_f2, fps_pos)
+        attn = torch.concat((sa1, sa2, sa3, sa4), dim=2)  # [batch, sample_num, 512]
 
+        attn = self.attn_mlp(attn)
+
+        attention = torch.zeros_like(f2)
+        batch = x.shape[0]
+        for i in range(batch):
+            attention[i, fps_index[i]] = attn[i]
+
+        attention = f2 + attention
         # to a higher space
-        attn = torch.permute(attn, [0, 2, 1])
-        attn = self.conv_fuse(attn)
-        attn = torch.permute(attn, [0, 2, 1])  # [batch, fps_sample_num, 1024]
+        attention = torch.permute(attention, [0, 2, 1])
+        features = self.conv_fuse(attention)
+        p_feature = torch.permute(features, [0, 2, 1])  # [batch, points_num, 1024]
+        g_feature = torch.max(features, dim=2)[0]
+        return g_feature, p_feature
 
-        return attn
 
-
+"""
 if __name__ == "__main__":
-    x = torch.randn(10, 4000, 12)
-    x = x.numpy()
-    x = farthest_point_sampling(x)
+    x = torch.randn(4, 4000, 12)
+    temp = x.numpy()
+    idx, points = farthest_point_sampling(temp)
     model = Transformer(12 - 3, 4, 64)
-    out = model(x)
+    out = model(x, points, idx)
     print(out.shape)
+"""
