@@ -85,11 +85,11 @@ def train(model: list, data: Data_S3DIS):
         data.test_next_bat_index = 0
 
         #!!!!!!! !!!
-        accu_file = open("J:/COMProfile/Downloads/pk/0407_accu.txt", "a")  # append mode
+        accu_file = open("J:/COMProfile/Downloads/pk/transformer/0410_accu.txt", "a")  # append mode
         accu_file.write(','.join(str(i) for i in accu))
         accu_file.write("\n")
         accu_file.close()
-        iou_file = open("J:/COMProfile/Downloads/pk/0407_iou.txt", "a")  # append mode
+        iou_file = open("J:/COMProfile/Downloads/pk/transformer/0410_iou.txt", "a")  # append mode
         iou_file.write(str(iou))
         iou_file.write("\n")
         iou_file.close()
@@ -99,24 +99,43 @@ def train(model: list, data: Data_S3DIS):
 
 
 def train_transformer(model, data):
+    device = "cuda"
     transformer, seg_net = model
+    transformer = transformer.to(device)
+    seg_net = seg_net.to(device)
     start_epoch = 0
     optimizer = optim.Adam([{"params": transformer.parameters()}, {"params": seg_net.parameters()}],
-                           lr=5e-4)
+                           lr=8e-5)
     for epoch in range(start_epoch, start_epoch + 50):
         data.shuffle_train_files(epoch)
         batch = data.total_train_batch_num
         for i in range(batch):
             X, sem_labels, ins_labels, psem_labels, bb_labels, pmask_labels = data.load_train_next_batch()
             idx, points = farthest_point_sampling(X)
+            points = points.to(device, dtype=dtype)
             X = torch.tensor(X)
             sem_labels = torch.tensor(sem_labels)
             psem_labels = torch.tensor(psem_labels)
+            X = X.to(device, dtype=dtype)
+            psem_labels = psem_labels.to(device)
             global_features, points_features = transformer(X, points, idx)
             predict_sem_labels = seg_net(global_features, points_features)
             loss = Ops.semantic_loss(psem_labels, predict_sem_labels)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if i % 10 == 0:
+            if i % 100 == 0:
                 print('Epoch{%d}/{%d},batch{%d}/{%d}:loss is %.4f' % (epoch, start_epoch + 50, i, batch, loss.item()))
+
+        accu = eva_accu_transformer(transformer, seg_net, data, device)
+        data.test_next_bat_index = 0
+
+        torch.save(transformer, "J:/COMProfile/Downloads/pk/transformer/transformer_" + str(epoch) + ".pth")
+        torch.save(seg_net, "J:/COMProfile/Downloads/pk/transformer/seg_net_" + str(epoch) + ".pth")
+
+
+        #!!!!!!! !!!
+        accu_file = open("J:/COMProfile/Downloads/pk/transformer/0411_accu.txt", "a")  # append mode
+        accu_file.write(','.join(str(i) for i in accu))
+        accu_file.write("\n")
+        accu_file.close()
