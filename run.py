@@ -18,7 +18,7 @@ a = 'Area_1'
 con = glob.glob("./data/" + a + '*.h5')
 """
 
-"""
+
 data = Data_S3DIS("./data/", ['Area_1', 'Area_2', 'Area_3', 'Area_4', 'Area_6'], ['Area_5'])
 
 from train import train_transformer
@@ -26,7 +26,7 @@ from train import train_transformer
 net = Transformer(9, 4, 64)
 net2 = Semantic_Net()
 train_transformer([net, net2], data)
-"""
+
 
 
 """
@@ -70,7 +70,7 @@ C_sIoU = box_s_iou_cost(torch.tensor(X), torch.tensor(bb_labels), box)
 print(C_sIoU.shape)
 """
 
-
+"""
 fin = h5py.File("./data/Area_5_hallway_1.h5", 'r')
 
 ## (55, 4096, 3)  &    [55, 4096, 9]
@@ -118,7 +118,7 @@ predict_sem_labels = predict_sem_labels.numpy()
 print(predict_sem_labels.shape)
 
 Plot.draw_pc_semins(fin['coords'][:].reshape(-1, 3), predict_sem_labels, 13)
-
+"""
 
 
 """
