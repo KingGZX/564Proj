@@ -10,7 +10,7 @@
 
 
 
-**you can get S3DIS dataset from :** 
+**you can get dataset from :** 
 
-[Link]: https://drive.google.com/open?id=1hOsoOqOWKSZIgAZLu2JmOb_U8zdR04v0
+S3DIS: https://drive.google.com/open?id=1hOsoOqOWKSZIgAZLu2JmOb_U8zdR04v0
 
