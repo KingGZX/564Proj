@@ -12,5 +12,13 @@
 
 **you can get dataset from :** 
 
-S3DIS: https://drive.google.com/open?id=1hOsoOqOWKSZIgAZLu2JmOb_U8zdR04v0
+**S3DIS:** https://drive.google.com/open?id=1hOsoOqOWKSZIgAZLu2JmOb_U8zdR04v0
+
+
+
+
+
+
+
+**Our presentation link:** https://youtu.be/dktmID5oDDs
 
